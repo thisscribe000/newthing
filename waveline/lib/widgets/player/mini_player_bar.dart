@@ -4,6 +4,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import '../../services/player_service.dart';
 import '../../theme/app_theme.dart';
+import '../artwork.dart';
 
 class MiniPlayerBar extends StatelessWidget {
   const MiniPlayerBar({super.key});
@@ -14,44 +15,52 @@ class MiniPlayerBar extends StatelessWidget {
       builder: (context, player, _) {
         if (!player.hasContent) return const SizedBox.shrink();
 
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                WavelineColors.accentDark.withValues(alpha: 0.3),
-                WavelineColors.bg.withValues(alpha: 0.95),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            border: Border(
-              top: BorderSide(color: WavelineColors.accent.withValues(alpha: 0.15)),
-            ),
-          ),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-          child: Row(
-            children: [
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (player.isLoading)
               Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      WavelineColors.accent.withValues(alpha: 0.3),
-                      WavelineColors.surface3,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: WavelineColors.border),
-                ),
-                child: Center(
-                  child: Text(
-                    player.nowPlayingEmoji,
-                    style: const TextStyle(fontSize: 20),
+                width: double.infinity,
+                height: 2,
+                color: WavelineColors.accent.withValues(alpha: 0.15),
+                child: FractionallySizedBox(
+                  widthFactor: 0.3,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          WavelineColors.accent.withValues(alpha: 0.3),
+                          WavelineColors.accent,
+                          WavelineColors.accent.withValues(alpha: 0.3),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
                   ),
                 ),
+              ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    WavelineColors.accentDark.withValues(alpha: 0.3),
+                    WavelineColors.bg.withValues(alpha: 0.95),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                border: Border(
+                  top: BorderSide(color: WavelineColors.accent.withValues(alpha: 0.15)),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              child: Row(
+            children: [
+              ArtworkWidget(
+                imageUrl: player.nowPlayingImageUrl,
+                emoji: player.nowPlayingEmoji,
+                size: 44,
+                borderRadius: 12,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -85,7 +94,9 @@ class MiniPlayerBar extends StatelessWidget {
               _PlayerControls(player: player),
             ],
           ),
-        );
+        ),
+      ],
+    );
       },
     );
   }
@@ -118,8 +129,8 @@ class _PlayerControls extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: WavelineColors.accent.withValues(alpha: 0.3),
-                    blurRadius: 8,
+                    color: WavelineColors.accentBright.withValues(alpha: 0.35),
+                    blurRadius: 12,
                   ),
                 ],
               ),

@@ -26,8 +26,7 @@ class GradientTopBar extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            WavelineColors.accentDark.withValues(alpha: 0.6),
-            WavelineColors.accent.withValues(alpha: 0.15),
+            Colors.white.withValues(alpha: 0.06),
             Colors.transparent,
           ],
         ),

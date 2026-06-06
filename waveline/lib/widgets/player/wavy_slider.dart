@@ -166,9 +166,9 @@ class _WavySliderPainter extends CustomPainter {
 
   void _drawWave(Canvas canvas, Size size, double halfHeight,
       double availableWidth, double thumbX) {
-    final amplitude = isDragging
+    final amplitude = isDragging || !isPlaying
         ? 0.0
-        : (isPlaying ? 3.0 : 1.0) * (0.3 + 0.7 * (1 - progress));
+        : 3.0 * (0.3 + 0.7 * (1 - progress));
     if (amplitude < 0.3) return;
 
     final paint = Paint()
@@ -215,7 +215,15 @@ class _WavySliderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_WavySliderPainter oldDelegate) => true;
+  bool shouldRepaint(_WavySliderPainter oldDelegate) =>
+      progress != oldDelegate.progress ||
+      waveValue != oldDelegate.waveValue ||
+      isPlaying != oldDelegate.isPlaying ||
+      isDragging != oldDelegate.isDragging ||
+      activeColor != oldDelegate.activeColor ||
+      inactiveColor != oldDelegate.inactiveColor ||
+      trackHeight != oldDelegate.trackHeight ||
+      thumbRadius != oldDelegate.thumbRadius;
 }
 
 

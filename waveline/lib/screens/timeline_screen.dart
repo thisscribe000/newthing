@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../models/timeline_entry.dart';
+import '../models/timeline_entry.dart' show TimelineEntry, TimelineEntryType;
 import '../models/radio_station.dart';
 import '../services/player_service.dart';
 import '../services/listening_history.dart';
 import '../theme/app_theme.dart';
+import '../widgets/artwork.dart';
+import '../widgets/responsive.dart';
 
 class TimelineScreen extends StatelessWidget {
   const TimelineScreen({super.key});
@@ -16,7 +18,7 @@ class TimelineScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 120,
+            expandedHeight: Responsive(context).libraryHeaderHeight,
             pinned: false,
             backgroundColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
@@ -184,7 +186,7 @@ class _HistoryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: () {
             final player = context.read<PlayerService>();
-            if (entry.type == 'radio') {
+            if (entry.type == TimelineEntryType.radio) {
               final station = RadioStation.seedStations
                   .where((s) => s.id == entry.id)
                   .firstOrNull;
@@ -195,16 +197,10 @@ class _HistoryCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: WavelineColors.surface3,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(entry.emoji, style: const TextStyle(fontSize: 20)),
-                  ),
+                ArtworkWidget(
+                  emoji: entry.emoji,
+                  size: 44,
+                  borderRadius: 12,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

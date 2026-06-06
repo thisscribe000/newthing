@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/radio_station.dart';
 import '../models/podcast.dart';
 import '../models/podcast_clip.dart';
 import '../services/player_service.dart';
 import '../services/podcast_service.dart';
 import '../services/clip_service.dart';
+import '../services/favorite_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gradient_top_bar.dart';
+import '../widgets/artwork.dart';
+import '../widgets/station_card.dart';
+import '../widgets/responsive.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -42,14 +47,14 @@ class _LibraryScreenState extends State<LibraryScreen>
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            expandedHeight: 140,
+            expandedHeight: Responsive(context).libraryHeaderHeight,
             pinned: true,
             backgroundColor: WavelineColors.bg,
             surfaceTintColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
               background: GradientTopBar(
                 title: 'Library',
-                height: 140,
+                height: Responsive(context).libraryHeaderHeight,
                 trailing: Container(
                   decoration: BoxDecoration(
                     color: WavelineColors.surface3,
@@ -125,6 +130,19 @@ class _LibraryScreenState extends State<LibraryScreen>
 }
 
 class _RadioTab extends StatelessWidget {
+  Future<void> _pickLocalFile(BuildContext context) async {
+    final player = context.read<PlayerService>();
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mp3', 'wav', 'aac', 'ogg', 'flac', 'm4a'],
+    );
+    if (result != null && result.files.single.path != null) {
+      final path = result.files.single.path!;
+      final name = result.files.single.name;
+      player.playLocalFile(path, name);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -133,9 +151,70 @@ class _RadioTab extends StatelessWidget {
         _SearchField(),
         const SizedBox(height: 16),
         ...RadioStation.seedStations.map(
-          (station) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _StationCard(station: station),
+          (station) => StationCard(station: station),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: WavelineColors.surface2,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: WavelineColors.borderLight),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _pickLocalFile(context),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: WavelineColors.accent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        Icons.audio_file_rounded,
+                        color: WavelineColors.accent,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Play Local Audio',
+                            style: GoogleFonts.nunito(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: WavelineColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'mp3, wav, aac, flac, ogg',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              color: WavelineColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 16,
+                      color: WavelineColors.textDim,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -176,127 +255,6 @@ class _SearchFieldState extends State<_SearchField> {
       ),
       style: GoogleFonts.dmSans(fontSize: 14, color: WavelineColors.textPrimary),
       onChanged: (_) => setState(() {}),
-    );
-  }
-}
-
-class _StationCard extends StatelessWidget {
-  final RadioStation station;
-
-  const _StationCard({required this.station});
-
-  @override
-  Widget build(BuildContext context) {
-    final player = context.watch<PlayerService>();
-    final isActive = player.currentStation?.id == station.id;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: WavelineColors.surface2,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isActive
-              ? WavelineColors.accent.withValues(alpha: 0.4)
-              : WavelineColors.border,
-          width: isActive ? 1.5 : 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => context.read<PlayerService>().playStation(station),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        isActive
-                            ? WavelineColors.accent.withValues(alpha: 0.3)
-                            : WavelineColors.surface3,
-                        WavelineColors.surface2,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Center(
-                    child: Text(station.emoji, style: const TextStyle(fontSize: 24)),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        station.name,
-                        style: GoogleFonts.nunito(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: WavelineColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${station.genre} \u00b7 ${station.country}',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          color: WavelineColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isActive)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: WavelineColors.accent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: WavelineColors.accent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'LIVE',
-                          style: GoogleFonts.dmMono(
-                            fontSize: 10,
-                            color: WavelineColors.accent,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  Text(
-                    '${station.listeners}',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      color: WavelineColors.textDim,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -447,16 +405,11 @@ class _EpisodeCard extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: WavelineColors.surface3,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(episode.showEmoji, style: const TextStyle(fontSize: 20)),
-                  ),
+                ArtworkWidget(
+                  imageUrl: episode.imageUrl,
+                  emoji: episode.showEmoji,
+                  size: 44,
+                  borderRadius: 12,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -545,24 +498,18 @@ class _ClipCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: WavelineColors.surface3,
-                  borderRadius: BorderRadius.circular(12),
+                ArtworkWidget(
+                  emoji: clip.showEmoji,
+                  size: 44,
+                  borderRadius: 12,
                 ),
-                child: Center(
-                  child: Text(clip.showEmoji, style: const TextStyle(fontSize: 20)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      clip.episodeTitle,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        clip.episodeTitle,
                       style: GoogleFonts.nunito(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -613,18 +560,57 @@ class _ClipCard extends StatelessWidget {
 class _FavoritesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.favorite_outline_rounded, size: 48, color: WavelineColors.textDim),
-          const SizedBox(height: 12),
-          Text(
-            'Favorite stations and episodes\nwill appear here',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(fontSize: 14, color: WavelineColors.textMuted),
-          ),
-        ],
+    return Consumer<FavoriteService>(
+      builder: (context, fav, _) {
+        final favoriteStations = RadioStation.seedStations
+            .where((s) => fav.isFavorite(s.id))
+            .toList();
+
+        if (favoriteStations.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.favorite_outline_rounded, size: 48, color: WavelineColors.textDim),
+                const SizedBox(height: 12),
+                Text(
+                  'Favorite stations and episodes\nwill appear here',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(fontSize: 14, color: WavelineColors.textMuted),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          children: [
+            _SectionLabel('Radio Stations'),
+            const SizedBox(height: 10),
+            ...favoriteStations.map(
+              (s) => StationCard(station: s),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: GoogleFonts.dmSans(
+        fontSize: 11,
+        letterSpacing: 1.5,
+        color: WavelineColors.textMuted,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

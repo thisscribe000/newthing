@@ -1,6 +1,6 @@
 # Waveline — Project Status
 
-> Flutter port of PixelPlayer's Material 3 design, with Waveline's own radio/podcast/clip features layered on top.
+> Radio + podcast app with social feed, dark theme, and responsive layout.
 
 ---
 
@@ -8,32 +8,41 @@
 
 ```
 lib/
-├── main.dart                  # App shell, 4-tab nav, draggable player overlay
+├── main.dart                  # App shell, 5-tab nav (Home/Feed/Library/Search/History), draggable player overlay
 ├── theme/
-│   └── app_theme.dart         # M3 dark theme, WavelineColors palette
+│   └── app_theme.dart         # True dark theme (0D0D0D bg), purple accent (AB47BC), WavelineColors palette
 ├── models/
-│   ├── radio_station.dart     # Seed stations (Zeno.fm URLs)
+│   ├── radio_station.dart     # Seed stations (picsum artwork URLs)
 │   ├── podcast.dart           # PodcastShow + PodcastEpisode
-│   ├── podcast_clip.dart      # Clip model
-│   └── timeline_entry.dart    # Listening history entry
+│   ├── timeline_entry.dart    # Listening history entry (TimelineEntryType enum)
+│   ├── feed_post.dart         # FeedPost with FeedPostType (recommendation/clip), likes, clip timestamps
+│   ├── feed_comment.dart      # FeedComment with text + optional audioStickerPath
+│   └── queue_item.dart        # Sealed class (StationQueueItem/EpisodeQueueItem)
 ├── services/
-│   ├── player_service.dart    # Audio playback (just_audio), state streams
+│   ├── player_service.dart    # Audio playback (just_audio), state streams, queue, local files, loading state
 │   ├── podcast_service.dart   # RSS feed parsing (webfeed)
 │   ├── listening_history.dart # SharedPreferences-backed history
-│   └── clip_service.dart      # Clip storage
+│   ├── feed_service.dart      # Social feed CRUD, likes, comments, SharedPreferences persistence
+│   ├── favorite_service.dart  # Favorites toggle by ID, SharedPreferences
+│   └── clip_service.dart      # Clip storage (not wired)
 ├── screens/
-│   ├── home_screen.dart       # Gradient header, Your Mix, collage, history, trending
+│   ├── home_screen.dart       # Gradient top bar, Your Mix, Continue Listening, Trending Podcasts, history
+│   ├── feed_screen.dart       # Social feed with post cards, CreatePostSheet, CommentsSheet, audio stickers
 │   ├── library_screen.dart    # 4 tabs (Radio/Podcasts/Clips/Favorites), search, categories
 │   ├── search_screen.dart     # Gradient header, category grid, filtered results
 │   └── timeline_screen.dart   # Grouped listening history
 └── widgets/
     ├── player/
-    │   ├── mini_player_bar.dart       # Always-visible bottom bar (tappable → full player)
-    │   ├── full_player_sheet.dart     # Draggable overlay: art, info, seekbar, controls
-    │   ├── wavy_slider.dart           # CustomPainter animated wave seekbar
+    │   ├── mini_player_bar.dart       # Always-visible bottom bar, loading indicator, responsive, stronger shadow
+    │   ├── full_player_sheet.dart     # Drag-up overlay: artwork, type badge (RADIO/PODCAST), share, queue, responsive
+    │   ├── wavy_slider.dart           # CustomPainter, shouldRepaint optimized, paused amplitude=0
     │   └── animated_playback_controls.dart  # Weight-shifting prev/play/next
-    ├── gradient_top_bar.dart          # Reusable collapsible gradient header
-    └── album_art_collage.dart         # Scattered emoji collage from history
+    ├── station_card.dart             # Shared station card widget (compact mode) — used by home/library/search
+    ├── artwork.dart                  # CachedNetworkImage + emoji fallback, border glow for active
+    ├── gradient_top_bar.dart         # Reusable subtle gradient header
+    ├── album_art_collage.dart        # Scattered emoji collage from history
+    ├── queue_sheet.dart              # Queue bottom sheet with removable items
+    └── responsive.dart               # Responsive sizing derived from screen dimensions
 ```
 
 ---
@@ -42,18 +51,24 @@ lib/
 
 | Component | Status | Details |
 |---|---|---|
-| **Home screen** | Done | Collapsible header, Your Mix horizontal cards, album collage from recent history, recently played list, trending stations |
-| **Library screen** | Done | 4 pinned tabs (Radio/Podcasts/Clips/Favorites), search field, genre pills, episode cards with async loading |
-| **Search screen** | Done | Gradient header, category grid with color-coded tiles, filtered station/show results |
-| **Timeline/History** | Done | Grouped by Today/Yesterday/date, empty state with icon |
-| **Mini player bar** | Done | Emoji art, title/subtitle, play/pause, timer button (podcast only), tappable |
-| **Full player sheet** | Done | Drag-up overlay, album art, track info, wavy slider (podcast only), animated controls, error display, bottom actions |
-| **Wavy slider** | Done | CustomPainter, sine-wave active track, glowing thumb, amplitude scales with progress, animates at lower amplitude when paused |
-| **Animated controls** | Done | Skip prev/play-pause/skip next, weight-shifting layout, tap-feedback scale/glow |
-| **Gradient top bar** | Done | Reusable collapsible gradient header |
-| **Album art collage** | Done | 4-item rotated/scattered emoji with colored borders |
-| **Color palette** | Done | Deep purple M3 dark theme (`#12082A` bg, `#AB47BC` accent) |
-| **Audio playback** | Done | Radio stations (Zeno.fm), podcast episodes (RSS), skip/seek/toggle |
+| **Home screen** | Done | Gradient header, Your Mix, Continue Listening card, Trending Podcasts horizontal, recently played |
+| **Feed screen** | Done | Post cards with artwork/title/caption, playable clip preview, like button, comment sheet, CreatePostSheet |
+| **Library screen** | Done | 4 tabs (Radio/Podcasts/Clips/Favorites), search field, genre pills, episode cards, local audio playback card |
+| **Search screen** | Done | Gradient header, category grid, filtered station/show results |
+| **Timeline/History** | Done | Grouped by Today/Yesterday/date, empty state |
+| **Mini player bar** | Done | Artwork, title/subtitle, play/pause, loading thin bar, responsive, stronger play shadow |
+| **Full player sheet** | Done | Drag-up, artwork, type badge, wavy slider, animated controls, share/queue/favorite buttons, responsive |
+| **Wavy slider** | Done | shouldRepaint optimization, paused wave amplitude 0 |
+| **Animated controls** | Done | Weight-shifting, tap-feedback scale/glow |
+| **Station card** | Done | Shared widget with compact mode, loading spinner, active border |
+| **Artwork** | Done | CachedNetworkImage with emoji fallback, active glow border |
+| **Queue system** | Done | QueueItem model, playNext, queue bottom sheet |
+| **Social feed** | Done | FeedPost/FeedComment models, FeedService (CRUD, likes, comments), CreatePostSheet, CommentsSheet, audio stickers |
+| **Favorites** | Done | FavoriteService (SharedPreferences), wired to library tab and full player heart |
+| **Local playback** | Done | file_picker integration, playLocalFile in PlayerService |
+| **Responsive sizing** | Done | All sizes derived from screen dimensions |
+| **Theme** | Done | True dark background (#0D0D0D), neutral surfaces (#141414/#1E1E1E/#2A2A2A), purple accent (#AB47BC) |
+| **Loading states** | Done | PlayerService.isLoading → spinner in cards, bar in mini player, text in full player |
 
 ---
 
@@ -61,34 +76,30 @@ lib/
 
 | Feature | Status |
 |---|---|
-| M3 dark theme | Done |
+| Dark theme (neutralized) | Done |
 | Animated wavy seekbar | Done |
 | Draggable mini→full player | Done |
 | Weight-shifting playback controls | Done |
-| Album art (emoji placeholder) | Done |
-| 4-tab navigation | Done |
+| Real artwork (network images) | Done |
+| 5-tab navigation (Home/Feed/Library/Search/History) | Done |
 | Library with tabs | Done |
 | Search with categories | Done |
 | Listening history | Done |
-| Gradient headers | Done |
-| Purple color scheme | Done |
+| Subtle gradient headers | Done |
+| Purple accent color scheme | Done |
 
-## PixelPlayer Features Missing
+## PixelPlayer Features Still Missing
 
 | Feature | Priority | Notes |
 |---|---|---|
-| Real album art (images) | Medium | Emoji placeholder; needs `cached_network_image` |
-| Favorites system | Medium | Tab exists, no service backing |
-| Queue management | Low | Icon exists in player, no implementation |
-| Sleep timer | Low | Icon exists in mini player (podcast), no implementation |
-| Playback speed | Low | Icon exists in player (podcast), no implementation |
-| Lyrics display | Low | Icon exists in player, no implementation |
-| Chromecast / Cast | Low | Icon exists in player, no implementation |
+| Sleep timer | Low | Icon exists, no implementation |
+| Playback speed | Low | Icon exists, no implementation |
+| Lyrics display | Low | Icon exists, no implementation |
+| Chromecast / Cast | Low | Icon exists, no implementation |
 | Equalizer | Low | Not started |
-| Local audio file playback | Medium | Only streaming (radio + RSS) |
 | Sidebar / settings drawer | Low | Not started |
 | Dynamic color / per-album theming | Low | Single hardcoded theme |
-| Multi-source backends | Low | N/A for Waveline's scope |
+| Multi-source backends | Low | N/A |
 | Collage pattern options | Low | Fixed layout only |
 | Smooth corner shapes | Low | Standard Flutter rounding |
 
@@ -96,27 +107,23 @@ lib/
 
 ## Known Issues
 
-- **Wavy slider repaints every frame** (`shouldRepaint → true` at `wavy_slider.dart:218`)
-- **Wave animation runs when paused** (amplitude = 1.0 instead of 0) at `wavy_slider.dart:171`
-- **Album art collage can clip** if container height is small (`album_art_collage.dart:51-52`)
-- **Gradient top bar** has 1 info-level lint (`use_null_aware_elements` at `gradient_top_bar.dart:64`)
-- **Station rows duplicated** in home/library/search — no shared component
-- **TimelineEntry.type** is raw string, not enum (used in string comparisons)
-- **No loading indicator** when station buffers (`PlayerService._isLoading` never read by UI)
-- **Bottom action buttons** (favorite, queue, lyrics, cast) are non-functional decoration
+- **Audio sticker playback** — `_AudioStickerPlayer` toggles UI but actual audio playback not wired (needs just_audio/record player)
+- **Clip playback** — Feed clip posts show content but don't seek to clipStartMs/clipEndMs
+- **Podcast artwork** — Uses emoji fallback; real URLs from RSS feeds not wired
+- **Feed content preview** — Only plays radio contentType; podcast contentType not handled
+- **Feed is local-only** — Single user "You", no cross-user sharing
+- **Gradient top bar** — 1 info-level lint (`use_null_aware_elements` at `gradient_top_bar.dart:63`)
+- **CachedNetworkImage** — Occasional `SQLITE_BUSY` on startup (flutter_cache_manager)
 
 ---
 
 ## Next Steps
 
-1. **Shared station card** — extract 3 duplicate implementations into one widget
-2. **Loading states** — wire `PlayerService.isLoading` to a buffering indicator
-3. **Favorites** — add `FavoriteService`, persist to SharedPreferences, wire library tab
-4. **Real artwork** — replace emoji with network images
-5. **Local playback** — support audio files from device storage
-6. **Queue system** — `nowPlayingQueue` in PlayerService + UI
-7. **`shouldRepaint` optimization** — compare delegate fields
-8. **Enum-ify `TimelineEntry.type`** — replace raw strings
+1. Wire audio sticker playback using recorded file path + just_audio
+2. Add clip seek-to-range for feed clip posts
+3. Add real artwork URLs from podcast RSS feeds
+4. Handle podcast episode playback from feed post content preview
+5. Consider cloud backend for cross-user feed sharing
 
 ---
 
@@ -128,5 +135,8 @@ lib/
 - **google_fonts** — Nunito + DM Sans + DM Mono
 - **provider** — state management
 - **webfeed** — RSS podcast parsing
-- **palette_generator** — color extraction from images
+- **cached_network_image** — artwork loading
+- **shared_preferences** — local persistence
+- **file_picker** — local audio file selection
+- **record** — audio sticker recording
 - **Android 16** (API 36), Impeller rendering, `emulator-5554`

@@ -2,26 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class WavelineColors {
-  static const Color bg = Color(0xFF12082A);
-  static const Color surface = Color(0xFF1A0F35);
-  static const Color surface2 = Color(0xFF23184A);
-  static const Color surface3 = Color(0xFF2D2158);
-  static const Color border = Color(0x33FFFFFF);
+  static const Color bg = Color(0xFF0D0D0D);
+  static const Color surface = Color(0xFF141414);
+  static const Color surface2 = Color(0xFF1E1E1E);
+  static const Color surface3 = Color(0xFF2A2A2A);
+  static const Color surfaceHighlight = Color(0xFF333333);
+  static const Color border = Color(0x2FFFFFFF);
   static const Color borderLight = Color(0x1AFFFFFF);
   static const Color accent = Color(0xFFAB47BC);
+  static const Color accentBright = Color(0xFFD976E8);
   static const Color accentLight = Color(0xFFCE73E0);
   static const Color accentDark = Color(0xFF7B2D8E);
   static const Color pink = Color(0xFFFF3D5A);
   static const Color gold = Color(0xFFF5C842);
   static const Color cyan = Color(0xFF00D4AA);
   static const Color orange = Color(0xFFFF8A65);
-  static const Color textPrimary = Color(0xFFF3E5F5);
-  static const Color textSecondary = Color(0xFFE1BEE7);
-  static const Color textMuted = Color(0xFF9575CD);
-  static const Color textDim = Color(0xFF7A5DA8);
+  static const Color textPrimary = Color(0xFFF5F5F5);
+  static const Color textSecondary = Color(0xFFE0E0E0);
+  static const Color textMuted = Color(0xFF9E9E9E);
+  static const Color textDim = Color(0xFF757575);
 
-  static const List<Color> gradientStart = [Color(0xFF2D1060), Color(0xFF12082A)];
-  static const List<Color> gradientPlayer = [Color(0xFF2D1060), Color(0xFF1A0F35)];
+  static const List<Color> gradientStart = [Color(0xFF2D1060), Color(0xFF0D0D0D)];
+  static const List<Color> gradientPlayer = [Color(0xFF2D1060), Color(0xFF141414)];
+
+  // Border radius constants
+  static const double radiusSm = 8.0;
+  static const double radiusMd = 12.0;
+  static const double radiusLg = 16.0;
+  static const double radiusXl = 24.0;
 }
 
 class WavelineTheme {
@@ -66,13 +74,13 @@ class WavelineTheme {
         color: WavelineColors.surface2,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(WavelineColors.radiusLg),
           side: BorderSide(color: WavelineColors.border),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: WavelineColors.bg.withValues(alpha: 0.95),
-        indicatorColor: WavelineColors.accent.withValues(alpha: 0.15),
+        indicatorColor: WavelineColors.accent.withValues(alpha: 0.2),
         surfaceTintColor: Colors.transparent,
         height: 72,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,

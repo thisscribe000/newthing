@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import '../models/radio_station.dart';
 import '../models/podcast.dart';
-import '../services/player_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/station_card.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -109,9 +108,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     if (_filteredStations.isNotEmpty) ...[
                       _SectionLabel('Radio Stations'),
                       const SizedBox(height: 10),
-                      ..._filteredStations.map((s) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _StationResult(station: s),
+                      ..._filteredStations.map((s) => StationCard(
+                        station: s,
+                        compact: true,
                       )),
                       const SizedBox(height: 16),
                     ],
@@ -224,93 +223,6 @@ class _NoResults extends StatelessWidget {
             style: GoogleFonts.dmSans(fontSize: 14, color: WavelineColors.textMuted),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StationResult extends StatelessWidget {
-  final RadioStation station;
-  const _StationResult({required this.station});
-
-  @override
-  Widget build(BuildContext context) {
-    final player = context.watch<PlayerService>();
-    final isActive = player.currentStation?.id == station.id;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: WavelineColors.surface2,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isActive
-              ? WavelineColors.accent.withValues(alpha: 0.4)
-              : WavelineColors.border,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => context.read<PlayerService>().playStation(station),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: WavelineColors.surface3,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(station.emoji, style: const TextStyle(fontSize: 20)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        station.name,
-                        style: GoogleFonts.nunito(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: WavelineColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        '${station.genre} \u00b7 ${station.country}',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 11,
-                          color: WavelineColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isActive)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: WavelineColors.accent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'LIVE',
-                      style: GoogleFonts.dmMono(
-                        fontSize: 9,
-                        color: WavelineColors.accent,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

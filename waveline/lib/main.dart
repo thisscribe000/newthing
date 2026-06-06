@@ -5,12 +5,15 @@ import 'services/player_service.dart';
 import 'services/podcast_service.dart';
 import 'services/listening_history.dart';
 import 'services/clip_service.dart';
+import 'services/favorite_service.dart';
+import 'services/feed_service.dart';
 import 'widgets/player/mini_player_bar.dart';
 import 'widgets/player/full_player_sheet.dart';
 import 'screens/home_screen.dart';
 import 'screens/library_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/timeline_screen.dart';
+import 'screens/feed_screen.dart';
 
 void main() {
   runApp(const WavelineApp());
@@ -24,6 +27,8 @@ class WavelineApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ClipService()..load()),
+        ChangeNotifierProvider(create: (_) => FavoriteService()..load()),
+        ChangeNotifierProvider(create: (_) => FeedService()..load()),
         ChangeNotifierProvider(create: (_) => ListeningHistory()..load()),
         ChangeNotifierProxyProvider<ListeningHistory, PlayerService>(
           create: (_) => PlayerService(),
@@ -57,6 +62,7 @@ class _MainShellState extends State<MainShell> with SingleTickerProviderStateMix
 
   final _screens = const [
     HomeScreen(),
+    FeedScreen(),
     LibraryScreen(),
     SearchScreen(),
     TimelineScreen(),
@@ -129,6 +135,11 @@ class _MainShellState extends State<MainShell> with SingleTickerProviderStateMix
                       icon: Icon(Icons.explore_outlined),
                       selectedIcon: Icon(Icons.explore),
                       label: 'Home',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.rss_feed_outlined),
+                      selectedIcon: Icon(Icons.rss_feed),
+                      label: 'Feed',
                     ),
                     NavigationDestination(
                       icon: Icon(Icons.library_music_outlined),

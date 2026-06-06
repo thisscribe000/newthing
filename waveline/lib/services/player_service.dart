@@ -3,10 +3,11 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/radio_station.dart';
 import '../models/podcast.dart';
-import '../models/timeline_entry.dart';
+import '../models/timeline_entry.dart' show TimelineEntry, TimelineEntryType;
+import '../models/queue_item.dart';
 import 'listening_history.dart';
 
-enum NowPlayingType { none, radio, podcast }
+enum NowPlayingType { none, radio, podcast, local }
 
 class PlayerService extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
@@ -14,9 +15,12 @@ class PlayerService extends ChangeNotifier {
   NowPlayingType _type = NowPlayingType.none;
   RadioStation? _currentStation;
   PodcastEpisode? _currentEpisode;
+  String? _localFileName;
   bool _isLoading = false;
   String? _error;
   ListeningHistory? _history;
+  final List<QueueItem> _queue = [];
+  int _queueIndex = -1;
 
   set history(ListeningHistory? h) => _history = h;
 
@@ -38,6 +42,8 @@ class PlayerService extends ChangeNotifier {
         return _currentStation?.name ?? '';
       case NowPlayingType.podcast:
         return _currentEpisode?.title ?? '';
+      case NowPlayingType.local:
+        return _localFileName ?? '';
       case NowPlayingType.none:
         return '';
     }
@@ -49,6 +55,8 @@ class PlayerService extends ChangeNotifier {
         return _currentStation?.nowPlaying ?? _currentStation?.genre ?? '';
       case NowPlayingType.podcast:
         return _currentEpisode?.showTitle ?? '';
+      case NowPlayingType.local:
+        return 'Local file';
       case NowPlayingType.none:
         return '';
     }
@@ -60,12 +68,74 @@ class PlayerService extends ChangeNotifier {
         return _currentStation?.emoji ?? '';
       case NowPlayingType.podcast:
         return _currentEpisode?.showEmoji ?? '';
+      case NowPlayingType.local:
+        return '🎵';
+      case NowPlayingType.none:
+        return '';
+    }
+  }
+
+  String get nowPlayingImageUrl {
+    switch (_type) {
+      case NowPlayingType.radio:
+        return _currentStation?.imageUrl ?? '';
+      case NowPlayingType.podcast:
+        return _currentEpisode?.imageUrl ?? '';
+      case NowPlayingType.local:
+        return '';
       case NowPlayingType.none:
         return '';
     }
   }
 
   bool get hasContent => _type != NowPlayingType.none;
+
+  List<QueueItem> get queue => List.unmodifiable(_queue);
+
+  int get queueIndex => _queueIndex;
+
+  bool get hasQueue => _queue.isNotEmpty;
+
+  Future<void> addToQueue(QueueItem item) async {
+    _queue.add(item);
+    if (_queue.length == 1) _queueIndex = 0;
+    notifyListeners();
+  }
+
+  Future<void> removeFromQueue(int index) async {
+    if (index < 0 || index >= _queue.length) return;
+    _queue.removeAt(index);
+    if (_queueIndex >= _queue.length) {
+      _queueIndex = _queue.length - 1;
+    }
+    notifyListeners();
+  }
+
+  Future<void> clearQueue() async {
+    _queue.clear();
+    _queueIndex = -1;
+    notifyListeners();
+  }
+
+  Future<void> playFromQueue(int index) async {
+    if (index < 0 || index >= _queue.length) return;
+    _queueIndex = index;
+    final item = _queue[index];
+    if (item is StationQueueItem) {
+      await playStation(item.station);
+    } else if (item is EpisodeQueueItem) {
+      await playEpisode(item.episode);
+    }
+  }
+
+  Future<void> playNext() async {
+    if (_queue.isEmpty) return;
+    final nextIndex = _queueIndex + 1;
+    if (nextIndex >= _queue.length) return;
+    await playFromQueue(nextIndex);
+  }
+
+  bool get hasNext => _queueIndex + 1 < _queue.length;
 
   Future<void> _setSource(String url) async {
     _isLoading = true;
@@ -95,9 +165,19 @@ class PlayerService extends ChangeNotifier {
       title: station.name,
       subtitle: station.genre,
       emoji: station.emoji,
-      type: 'radio',
+      type: TimelineEntryType.radio,
       playedAt: DateTime.now(),
     ));
+  }
+
+  Future<void> playLocalFile(String filePath, String fileName) async {
+    await _player.stop();
+    _type = NowPlayingType.local;
+    _localFileName = fileName;
+    _currentStation = null;
+    _currentEpisode = null;
+    await _setSource(filePath);
+    await _player.play();
   }
 
   Future<void> playEpisode(PodcastEpisode episode) async {
@@ -112,7 +192,7 @@ class PlayerService extends ChangeNotifier {
       title: episode.title,
       subtitle: episode.showTitle,
       emoji: episode.showEmoji,
-      type: 'podcast',
+      type: TimelineEntryType.podcast,
       playedAt: DateTime.now(),
     ));
   }
@@ -145,6 +225,7 @@ class PlayerService extends ChangeNotifier {
     _type = NowPlayingType.none;
     _currentStation = null;
     _currentEpisode = null;
+    _localFileName = null;
     notifyListeners();
   }
 

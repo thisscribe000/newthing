@@ -1,9 +1,11 @@
+enum TimelineEntryType { radio, podcast }
+
 class TimelineEntry {
   final String id;
   final String title;
   final String subtitle;
   final String emoji;
-  final String type; // 'radio' or 'podcast'
+  final TimelineEntryType type;
   final DateTime playedAt;
 
   const TimelineEntry({
@@ -20,7 +22,7 @@ class TimelineEntry {
         'title': title,
         'subtitle': subtitle,
         'emoji': emoji,
-        'type': type,
+        'type': type.name,
         'playedAt': playedAt.toIso8601String(),
       };
 
@@ -29,7 +31,10 @@ class TimelineEntry {
         title: json['title'] as String,
         subtitle: json['subtitle'] as String,
         emoji: json['emoji'] as String,
-        type: json['type'] as String,
+        type: TimelineEntryType.values.firstWhere(
+          (e) => e.name == json['type'],
+          orElse: () => TimelineEntryType.radio,
+        ),
         playedAt: DateTime.parse(json['playedAt'] as String),
       );
 }

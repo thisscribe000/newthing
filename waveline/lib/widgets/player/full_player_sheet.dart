@@ -4,7 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import '../../services/player_service.dart';
+import '../../services/favorite_service.dart';
 import '../../theme/app_theme.dart';
+import '../artwork.dart';
+import '../queue_sheet.dart';
+import '../responsive.dart';
+import '../../screens/feed_screen.dart';
 import 'wavy_slider.dart';
 import 'animated_playback_controls.dart';
 
@@ -106,6 +111,31 @@ class _FullPlayerSheetState extends State<FullPlayerSheet> {
                       _AlbumArtSection(player: player),
                       const SizedBox(height: 20),
                       _TrackInfo(player: player),
+                      if (player.isLoading)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: WavelineColors.accent,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Buffering',
+                                style: GoogleFonts.dmMono(
+                                  fontSize: 10,
+                                  color: WavelineColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       if (player.type == NowPlayingType.podcast) ...[
                         _SeekBar(
@@ -175,9 +205,10 @@ class _AlbumArtSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final artSize = Responsive(context).albumArtSize;
     return Container(
-      width: 280,
-      height: 280,
+      width: artSize,
+      height: artSize,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -191,16 +222,19 @@ class _AlbumArtSection extends StatelessWidget {
         border: Border.all(color: WavelineColors.border),
         boxShadow: [
           BoxShadow(
-            color: WavelineColors.accent.withValues(alpha: 0.1),
-            blurRadius: 30,
-            offset: const Offset(0, 8),
+            color: WavelineColors.accentBright.withValues(alpha: 0.15),
+            blurRadius: 40,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          player.nowPlayingEmoji,
-          style: const TextStyle(fontSize: 80),
+        child: ClipRRect(
+        borderRadius: BorderRadius.circular(23),
+        child: ArtworkWidget(
+          imageUrl: player.nowPlayingImageUrl,
+          emoji: player.nowPlayingEmoji,
+          size: artSize,
+          borderRadius: 23,
         ),
       ),
     );
@@ -216,6 +250,27 @@ class _TrackInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            color: player.type == NowPlayingType.radio
+                ? WavelineColors.cyan.withValues(alpha: 0.15)
+                : WavelineColors.accent.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            player.type == NowPlayingType.radio ? 'RADIO' : 'PODCAST',
+            style: GoogleFonts.dmMono(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: player.type == NowPlayingType.radio
+                  ? WavelineColors.cyan
+                  : WavelineColors.accent,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         Text(
           player.nowPlayingTitle,
           style: GoogleFonts.nunito(
@@ -307,15 +362,47 @@ class _BottomActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fav = context.watch<FavoriteService>();
+    final currentId = player.currentStation?.id ?? player.currentEpisode?.id ?? '';
+    final isFav = currentId.isNotEmpty && fav.isFavorite(currentId);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _ActionButton(icon: Icons.favorite_outline_rounded),
+        _ActionButton(
+          icon: isFav ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
+          iconColor: isFav ? WavelineColors.pink : null,
+          onTap: () {
+            if (currentId.isNotEmpty) fav.toggleFavorite(currentId);
+          },
+        ),
         if (player.type == NowPlayingType.podcast)
           _ActionButton(icon: Icons.speed_outlined),
-        _ActionButton(icon: Icons.queue_music_rounded),
-        _ActionButton(icon: Icons.lyrics_outlined),
-        _ActionButton(icon: Icons.cast_outlined),
+        _ActionButton(
+          icon: Icons.queue_music_rounded,
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const QueueSheet(),
+            );
+          },
+        ),
+        _ActionButton(
+          icon: Icons.lyrics_outlined,
+        ),
+        _ActionButton(
+          icon: Icons.share_rounded,
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const CreatePostSheet(),
+            );
+          },
+        ),
       ],
     );
   }
@@ -323,8 +410,14 @@ class _BottomActions extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   final IconData icon;
+  final Color? iconColor;
+  final VoidCallback? onTap;
 
-  const _ActionButton({required this.icon});
+  const _ActionButton({
+    required this.icon,
+    this.iconColor,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -337,10 +430,14 @@ class _ActionButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () {},
+          onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(10),
-            child: Icon(icon, color: WavelineColors.textMuted, size: 22),
+            child: Icon(
+              icon,
+              color: iconColor ?? WavelineColors.textMuted,
+              size: 22,
+            ),
           ),
         ),
       ),

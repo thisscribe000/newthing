@@ -1,17 +1,19 @@
 # waveline
 
-A new Flutter project.
+Radio + podcast app with a social feed, true dark theme, and responsive layout. Built with Flutter.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Radio & Podcast** — Stream Zeno.fm radio stations and RSS podcast episodes
+- **Social Feed** — Share what you're listening to, time-clip moments, like and comment with text or audio stickers
+- **Queue** — Build a play queue from stations and episodes
+- **Favorites** — Save stations/episodes to your library
+- **History** — Auto-tracked listening history grouped by date
+- **Responsive** — Adapts to all screen sizes
+- **Dark Theme** — True dark background with purple accent
 
-A few resources to get you started if this is your first Flutter project:
+## Tech
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Flutter, just_audio, Provider, SharedPreferences, cached_network_image, google_fonts, webfeed, file_picker, record
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+See `STATUS.md` for detailed project status.
