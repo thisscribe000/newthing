@@ -45,6 +45,7 @@ class AlbumArtCollage extends StatelessWidget {
     return SizedBox(
       height: height,
       child: Stack(
+        clipBehavior: Clip.hardEdge,
         children: [
           for (int i = 0; i < items.length; i++)
             Positioned(

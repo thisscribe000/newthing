@@ -107,23 +107,27 @@ lib/
 
 ## Known Issues
 
-- **Audio sticker playback** — `_AudioStickerPlayer` toggles UI but actual audio playback not wired (needs just_audio/record player)
-- **Clip playback** — Feed clip posts show content but don't seek to clipStartMs/clipEndMs
-- **Podcast artwork** — Uses emoji fallback; real URLs from RSS feeds not wired
-- **Feed content preview** — Only plays radio contentType; podcast contentType not handled
 - **Feed is local-only** — Single user "You", no cross-user sharing
 - **Gradient top bar** — 1 info-level lint (`use_null_aware_elements` at `gradient_top_bar.dart:63`)
 - **CachedNetworkImage** — Occasional `SQLITE_BUSY` on startup (flutter_cache_manager)
 
 ---
 
+## What's Changed
+
+| Change | Details |
+|---|---|
+| **Seed dummy feed posts** | 3 starter posts (2 recommendations, 1 clip) on first launch |
+| **Audio sticker playback** | `_AudioStickerPlayer` wired with `just_audio` player, loading/completion states |
+| **Clip seek-to-range** | Feed clip posts seek to `clipStartMs` on play (non-radio content) |
+| **Feed podcast playback** | `audioUrl` stored in `FeedPost`; `_ContentPreview` plays podcast episodes |
+| **FeedPost model** | Added `audioUrl` field for direct audio playback from feed |
+
 ## Next Steps
 
-1. Wire audio sticker playback using recorded file path + just_audio
-2. Add clip seek-to-range for feed clip posts
-3. Add real artwork URLs from podcast RSS feeds
-4. Handle podcast episode playback from feed post content preview
-5. Consider cloud backend for cross-user feed sharing
+1. Consider cloud backend for cross-user feed sharing
+2. Wire audio sticker *recording* in comment composer (currently just playback)
+3. Artwork from podcast RSS — already parsed in `PodcastService`, verify display in library/feed
 
 ---
 

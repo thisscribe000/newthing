@@ -34,7 +34,10 @@ class WavelineApp extends StatelessWidget {
           create: (_) => PlayerService(),
           update: (_, history, player) => player!..history = history,
         ),
-        Provider(create: (_) => PodcastService(), dispose: (_, s) => s.dispose()),
+        Provider(
+          create: (_) => PodcastService(),
+          dispose: (_, s) => s.dispose(),
+        ),
       ],
       child: MaterialApp(
         title: 'Waveline',
@@ -53,12 +56,14 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> with SingleTickerProviderStateMixin {
+class _MainShellState extends State<MainShell>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
 
   late AnimationController _playerAnimController;
-  late Animation<Offset> _playerSlide;
-  bool _playerExpanded = false;
+  late Animation<double> _playerExpand;
+  double _playerExpandValue = 0.0; // 0 = minimized, 1 = fullscreen
+  bool _isFullscreen = false;
 
   final _screens = const [
     HomeScreen(),
@@ -72,16 +77,20 @@ class _MainShellState extends State<MainShell> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     _playerAnimController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    _playerSlide = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0, -1),
-    ).animate(CurvedAnimation(
-      parent: _playerAnimController,
-      curve: Curves.easeInOutCubic,
-    ));
+    _playerExpand = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _playerAnimController,
+        curve: Curves.easeInOutCubic,
+      ),
+    );
+    _playerAnimController.addListener(() {
+      setState(() {
+        _playerExpandValue = _playerAnimController.value;
+      });
+    });
   }
 
   @override
@@ -90,36 +99,93 @@ class _MainShellState extends State<MainShell> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  void _togglePlayer() {
+  void _expandPlayer() {
     if (!context.read<PlayerService>().hasContent) return;
-    setState(() => _playerExpanded = !_playerExpanded);
-    if (_playerExpanded) {
-      _playerAnimController.forward();
-    } else {
-      _playerAnimController.reverse();
-    }
+    _playerAnimController.forward();
+  }
+
+  void _collapsePlayer() {
+    _playerAnimController.reverse();
+  }
+
+  void _toggleFullscreen() {
+    setState(() {
+      _isFullscreen = !_isFullscreen;
+      if (_isFullscreen) {
+        _playerAnimController.forward();
+      } else {
+        _playerAnimController.reverse();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final player = context.watch<PlayerService>();
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    final navBarHeight = 72.0;
+    final topInset = MediaQuery.of(context).padding.top;
+    final screenHeight = MediaQuery.of(context).size.height;
 
+    // If fullscreen, show player as a full page
+    if (_isFullscreen && player.hasContent) {
+      return Scaffold(
+        body: Column(
+          children: [
+            Expanded(child: FullPlayerSheet(onCollapse: _toggleFullscreen)),
+            Padding(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: NavigationBar(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (i) {
+                  setState(() => _currentIndex = i);
+                  _toggleFullscreen();
+                },
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.explore_outlined),
+                    selectedIcon: Icon(Icons.explore),
+                    label: 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.rss_feed_outlined),
+                    selectedIcon: Icon(Icons.rss_feed),
+                    label: 'Feed',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.library_music_outlined),
+                    selectedIcon: Icon(Icons.library_music),
+                    label: 'Library',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.search_outlined),
+                    selectedIcon: Icon(Icons.search),
+                    label: 'Search',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.history_outlined),
+                    selectedIcon: Icon(Icons.history),
+                    label: 'History',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Normal view: minimized + expanded overlay
     return Scaffold(
       body: Stack(
         children: [
           Column(
             children: [
               Expanded(
-                child: IndexedStack(
-                  index: _currentIndex,
-                  children: _screens,
-                ),
+                child: IndexedStack(index: _currentIndex, children: _screens),
               ),
               if (player.hasContent)
                 GestureDetector(
-                  onTap: _togglePlayer,
+                  onTap: _expandPlayer,
                   child: const MiniPlayerBar(),
                 ),
               Padding(
@@ -127,7 +193,6 @@ class _MainShellState extends State<MainShell> with SingleTickerProviderStateMix
                 child: NavigationBar(
                   selectedIndex: _currentIndex,
                   onDestinationSelected: (i) {
-                    if (_playerExpanded) _togglePlayer();
                     setState(() => _currentIndex = i);
                   },
                   destinations: const [
@@ -161,42 +226,31 @@ class _MainShellState extends State<MainShell> with SingleTickerProviderStateMix
               ),
             ],
           ),
-          if (player.hasContent)
-            AnimatedBuilder(
-              animation: _playerSlide,
-              builder: (context, child) {
-                final offset = _playerSlide.value;
-                final playerHeight = MediaQuery.of(context).size.height -
-                    navBarHeight -
-                    bottomInset;
-                return Transform.translate(
-                  offset: Offset(0, playerHeight * offset.dy),
-                  child: GestureDetector(
-                    onVerticalDragUpdate: (details) {
-                      final delta = details.primaryDelta ?? 0;
-                      _playerAnimController.value -= delta / playerHeight;
-                    },
-                    onVerticalDragEnd: (details) {
-                      if (_playerAnimController.value > 0.5) {
-                        _playerAnimController.forward();
-                        setState(() => _playerExpanded = true);
-                      } else {
-                        _playerAnimController.reverse();
-                        setState(() => _playerExpanded = false);
-                      }
-                    },
-                    child: Container(
-                      height: playerHeight,
-                      alignment: Alignment.bottomCenter,
-                      child: FullPlayerSheet(
-                        onCollapse: () {
-                          if (_playerExpanded) _togglePlayer();
-                        },
-                      ),
-                    ),
-                  ),
-                );
+          // Expanded overlay (covers nav bar when expanding)
+          if (player.hasContent && _playerExpandValue > 0)
+            GestureDetector(
+              onVerticalDragUpdate: (details) {
+                final delta = details.primaryDelta ?? 0;
+                _playerAnimController.value -= delta / screenHeight;
               },
+              onVerticalDragEnd: (details) {
+                // Snap to fullscreen or collapse
+                if (_playerAnimController.value > 0.7) {
+                  setState(() => _isFullscreen = true);
+                  _playerAnimController.forward();
+                } else {
+                  _playerAnimController.reverse();
+                }
+              },
+              child: Transform.translate(
+                offset: Offset(0, (1 - _playerExpandValue) * 60),
+                child: Container(
+                  height:
+                      screenHeight - topInset - (60 * (1 - _playerExpandValue)),
+                  color: Colors.black.withValues(alpha: 0.95),
+                  child: FullPlayerSheet(onCollapse: _collapsePlayer),
+                ),
+              ),
             ),
         ],
       ),

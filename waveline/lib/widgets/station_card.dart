@@ -54,6 +54,8 @@ class StationCard extends StatelessWidget {
                       children: [
                         Text(
                           station.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.nunito(
                             fontSize: compact ? 14 : 15,
                             fontWeight: FontWeight.w700,
@@ -63,6 +65,8 @@ class StationCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           '${station.genre} \u00b7 ${station.country}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.dmSans(
                             fontSize: compact ? 11 : 12,
                             color: WavelineColors.textMuted,

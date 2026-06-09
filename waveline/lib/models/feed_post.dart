@@ -10,6 +10,7 @@ class FeedPost {
   final String subtitle;
   final String emoji;
   final String imageUrl;
+  final String? audioUrl;
   final int? clipStartMs;
   final int? clipEndMs;
   final String caption;
@@ -27,6 +28,7 @@ class FeedPost {
     required this.subtitle,
     required this.emoji,
     this.imageUrl = '',
+    this.audioUrl,
     this.clipStartMs,
     this.clipEndMs,
     this.caption = '',
@@ -47,6 +49,7 @@ class FeedPost {
         'subtitle': subtitle,
         'emoji': emoji,
         'imageUrl': imageUrl,
+        'audioUrl': audioUrl,
         'clipStartMs': clipStartMs,
         'clipEndMs': clipEndMs,
         'caption': caption,
@@ -68,6 +71,7 @@ class FeedPost {
         subtitle: json['subtitle'] as String,
         emoji: json['emoji'] as String,
         imageUrl: (json['imageUrl'] as String?) ?? '',
+        audioUrl: json['audioUrl'] as String?,
         clipStartMs: json['clipStartMs'] as int?,
         clipEndMs: json['clipEndMs'] as int?,
         caption: (json['caption'] as String?) ?? '',

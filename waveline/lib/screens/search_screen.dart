@@ -150,38 +150,48 @@ class _CategoriesGrid extends StatelessWidget {
       children: [
         _SectionLabel('Browse Categories'),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: categories.map((cat) {
-            final w = MediaQuery.of(context).size.width;
-            final itemW = ((w > 0 ? w : 400) - 42) / 2;
-            return Container(
-              width: itemW,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: (cat['color'] as Color).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: (cat['color'] as Color).withValues(alpha: 0.15),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Text(cat['emoji'] as String, style: const TextStyle(fontSize: 24)),
-                  const SizedBox(width: 10),
-                  Text(
-                    cat['label'] as String,
-                    style: GoogleFonts.nunito(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: WavelineColors.textPrimary,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 10.0;
+            final itemW = (constraints.maxWidth - spacing) / 2;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: categories.map((cat) {
+                return Container(
+                  width: itemW,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: (cat['color'] as Color).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: (cat['color'] as Color).withValues(alpha: 0.15),
                     ),
                   ),
-                ],
-              ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Row(
+                    children: [
+                      Text(cat['emoji'] as String, style: const TextStyle(fontSize: 24)),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          cat['label'] as String,
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.nunito(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: WavelineColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             );
-          }).toList(),
+          },
         ),
       ],
     );

@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import '../models/feed_post.dart';
 import '../models/feed_comment.dart';
+import '../models/podcast.dart';
 import '../models/radio_station.dart';
 import '../services/feed_service.dart';
 import '../services/player_service.dart';
@@ -428,13 +431,32 @@ class _ContentPreview extends StatelessWidget {
   }
 
   void _playContent(BuildContext context) {
+    final player = context.read<PlayerService>();
     if (post.contentType == 'radio') {
       final station = RadioStation.seedStations
           .where((s) => s.id == post.contentId)
           .firstOrNull;
       if (station != null) {
-        context.read<PlayerService>().playStation(station);
+        player.playStation(station);
       }
+    } else if (post.audioUrl != null && post.audioUrl!.isNotEmpty) {
+      final episode = PodcastEpisode(
+        id: post.contentId,
+        showTitle: post.subtitle,
+        showEmoji: post.emoji,
+        title: post.title,
+        description: '',
+        audioUrl: post.audioUrl!,
+        duration: Duration.zero,
+        publishedAt: post.timestamp,
+        imageUrl: post.imageUrl,
+      );
+      player.playEpisode(episode);
+    }
+    if (post.clipStartMs != null && post.contentType != 'radio') {
+      Future.delayed(const Duration(milliseconds: 800), () {
+        player.seek(Duration(milliseconds: post.clipStartMs!));
+      });
     }
   }
 }
@@ -701,6 +723,9 @@ class _CreatePostSheetState extends State<CreatePostSheet> {
     final feed = context.read<FeedService>();
 
     final now = DateTime.now();
+    final audioUrl = player.type == NowPlayingType.radio
+        ? player.currentStation?.streamUrl
+        : player.currentEpisode?.audioUrl;
     final post = FeedPost(
       id: 'post_${now.millisecondsSinceEpoch}',
       userName: 'You',
@@ -711,6 +736,7 @@ class _CreatePostSheetState extends State<CreatePostSheet> {
       subtitle: player.nowPlayingSubtitle,
       emoji: player.nowPlayingEmoji,
       imageUrl: player.nowPlayingImageUrl,
+      audioUrl: audioUrl,
       clipStartMs: _isClip ? _clipStartMs : null,
       clipEndMs: _isClip ? _clipEndMs : null,
       caption: _captionController.text.trim(),
@@ -991,14 +1017,50 @@ class _AudioStickerPlayer extends StatefulWidget {
 }
 
 class _AudioStickerPlayerState extends State<_AudioStickerPlayer> {
+  final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
+  bool _isLoading = false;
+  StreamSubscription<PlayerState>? _stateSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _stateSub = _player.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed && mounted) {
+        setState(() => _isPlaying = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _stateSub?.cancel();
+    _player.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        setState(() => _isPlaying = !_isPlaying);
-        // Audio playback would use just_audio or the record package's player
+      onTap: () async {
+        if (_isPlaying) {
+          await _player.pause();
+          if (mounted) setState(() => _isPlaying = false);
+        } else {
+          setState(() => _isLoading = true);
+          try {
+            await _player.setAudioSource(AudioSource.uri(Uri.parse(widget.audioPath)));
+            await _player.play();
+            if (mounted) {
+              setState(() {
+                _isPlaying = true;
+                _isLoading = false;
+              });
+            }
+          } catch (e) {
+            if (mounted) setState(() => _isLoading = false);
+          }
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1009,14 +1071,23 @@ class _AudioStickerPlayerState extends State<_AudioStickerPlayer> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-              size: 14,
-              color: WavelineColors.accent,
-            ),
+            _isLoading
+                ? SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: WavelineColors.accent,
+                    ),
+                  )
+                : Icon(
+                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    size: 14,
+                    color: WavelineColors.accent,
+                  ),
             const SizedBox(width: 4),
             Text(
-              'Audio sticker',
+              _isPlaying ? 'Playing...' : 'Audio sticker',
               style: GoogleFonts.dmMono(
                 fontSize: 9,
                 color: WavelineColors.accent,

@@ -221,6 +221,8 @@ class _YourMixSection extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     station.genre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.dmSans(
                       fontSize: 11,
                       color: WavelineColors.textMuted,

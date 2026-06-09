@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/feed_post.dart';
 import '../models/feed_comment.dart';
+import '../models/radio_station.dart';
 
 class FeedService extends ChangeNotifier {
   static const _postsKey = 'feed_posts';
@@ -25,7 +26,65 @@ class FeedService extends ChangeNotifier {
     } catch (_) {
       _posts = [];
     }
+    if (_posts.isEmpty) {
+      await _seedDummyData();
+    }
     notifyListeners();
+  }
+
+  Future<void> _seedDummyData() async {
+    final now = DateTime.now();
+    final stations = RadioStation.seedStations;
+    _posts = [
+      FeedPost(
+        id: 'seed_1',
+        userName: 'You',
+        type: FeedPostType.recommendation,
+        contentId: stations[1].id,
+        contentType: 'radio',
+        title: stations[1].name,
+        subtitle: stations[1].genre,
+        emoji: stations[1].emoji,
+        imageUrl: stations[1].imageUrl,
+        caption: 'The best Afrobeats mix to start your morning! 🔥',
+        timestamp: now.subtract(const Duration(minutes: 15)),
+        likes: ['local_user'],
+        commentCount: 2,
+      ),
+      FeedPost(
+        id: 'seed_2',
+        userName: 'You',
+        type: FeedPostType.clip,
+        contentId: stations[0].id,
+        contentType: 'radio',
+        title: stations[0].name,
+        subtitle: 'Energy for the day 🚀',
+        emoji: stations[0].emoji,
+        imageUrl: stations[0].imageUrl,
+        clipStartMs: 30000,
+        clipEndMs: 60000,
+        caption: 'This part hits different!',
+        timestamp: now.subtract(const Duration(hours: 2)),
+        likes: [],
+        commentCount: 0,
+      ),
+      FeedPost(
+        id: 'seed_3',
+        userName: 'You',
+        type: FeedPostType.recommendation,
+        contentId: stations[4].id,
+        contentType: 'radio',
+        title: stations[4].name,
+        subtitle: stations[4].genre,
+        emoji: stations[4].emoji,
+        imageUrl: stations[4].imageUrl,
+        caption: 'Sunday vibes with Classic Rock 🎸',
+        timestamp: now.subtract(const Duration(days: 1)),
+        likes: ['local_user', 'friend_1'],
+        commentCount: 3,
+      ),
+    ];
+    await _persistPosts();
   }
 
   Future<void> addPost(FeedPost post) async {
